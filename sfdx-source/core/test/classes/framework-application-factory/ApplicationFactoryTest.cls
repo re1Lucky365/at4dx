@@ -38,8 +38,8 @@ private class ApplicationFactoryTest
         ITestAccountsSelector sel = (ITestAccountsSelector) Application.Selector.newInstance(Account.SObjectType);
         List<Account> accountList = sel.selectById(new Set<Id> {fflib_IdGenerator.generate(Account.SObjectType)});
 
-        System.assert(accountList != null);
-        System.assert(accountList.isEmpty());
+        System.Assert.isNotNull(accountList);
+        System.Assert.isTrue(accountList.isEmpty());
     }
 
     @IsTest
@@ -49,8 +49,8 @@ private class ApplicationFactoryTest
 
         List<Account> accountList = Application.Selector.selectById(new Set<Id> {fflib_IdGenerator.generate(Account.SObjectType)});
 
-        System.assert(accountList != null);
-        System.assert(accountList.isEmpty());
+        System.Assert.isNotNull(accountList);
+        System.Assert.isTrue(accountList.isEmpty());
     }
 
     @IsTest
@@ -70,8 +70,8 @@ private class ApplicationFactoryTest
 
         List<Account> accountList = (List<Account>) Application.Selector.selectByRelationship(contactList, Contact.AccountId);
 
-        System.assert(accountList != null);
-        System.assert(accountList.isEmpty());
+        System.Assert.isNotNull(accountList);
+        System.Assert.isTrue(accountList.isEmpty());
     }
 
     @IsTest
@@ -89,9 +89,9 @@ private class ApplicationFactoryTest
         ITestAccountsSelector sel = (ITestAccountsSelector) Application.Selector.newInstance(Account.SObjectType);
         List<Account> accountList = sel.selectById(new Set<Id> {fflib_IdGenerator.generate(Account.SObjectType)});
 
-        System.assert(accountList != null);
-        System.assertEquals(1, accountList.size());
-        System.assertEquals(acct.Id, accountList.get(0).Id);
+        System.Assert.isNotNull(accountList);
+        System.Assert.areEqual(1, accountList.size());
+        System.Assert.areEqual(acct.Id, accountList.get(0).Id);
     }
 
     /********************************************************
@@ -115,6 +115,10 @@ private class ApplicationFactoryTest
         };
 
         ApplicationSObjectSelectorDIModule.bindingRecords.addAll(bindingList);
+
+        // override the selector bindings just in case this method
+        //  executes in an org that already has an AccountsSelector.
+        Application.Selector.setMock(new TestAccountsSelector());
     }
 
     /********************************************************
@@ -129,8 +133,8 @@ private class ApplicationFactoryTest
         TestService serv = new TestService();
         String phrase = serv.getHelloWorldPhrase('Jane Doe');
 
-        System.assert(String.isNotBlank(phrase));
-        System.assertEquals('Hello Jane Doe!!!', phrase);
+        System.Assert.isTrue(String.isNotBlank(phrase));
+        System.Assert.areEqual('Hello Jane Doe!!!', phrase);
     }
     
     @IsTest
@@ -144,8 +148,8 @@ private class ApplicationFactoryTest
         TestService serv = new TestService();
         String phrase = serv.getHelloWorldPhrase('Jane Doe');
 
-        System.assert(String.isNotBlank(phrase));
-        System.assertEquals('this is the mock', phrase);
+        System.Assert.isTrue(String.isNotBlank(phrase));
+        System.Assert.areEqual('this is the mock', phrase);
     }
 
     private static void configureServices()
@@ -166,7 +170,7 @@ private class ApplicationFactoryTest
         configureDomains();
 
         ITestOnlyAccounts test_domain = new TestOnlyAccounts(new List<Account>()).newInstance(new List<Account>());
-        System.assert(test_domain != null);
+        System.Assert.isNotNull(test_domain);
     }
 
     @IsTest
@@ -175,7 +179,7 @@ private class ApplicationFactoryTest
         configureDomains();
 
         ITestOnlyAccounts test_domain = new TestOnlyAccounts(new List<Account>()).newInstance(new List<Account>(), Account.SObjectType);
-        System.assert(test_domain != null);
+        System.Assert.isNotNull(test_domain);
     }
 
     @IsTest
@@ -187,7 +191,7 @@ private class ApplicationFactoryTest
 
         Application.Domain.setMock(mock_domain);
         ITestOnlyAccounts test_domain = new TestOnlyAccounts(new List<Account>()).newInstance(new List<Account>());
-        System.assert(test_domain != null);
+        System.Assert.isNotNull(test_domain);
     }
 
     @IsTest
@@ -199,7 +203,7 @@ private class ApplicationFactoryTest
 
         Application.Domain.setMock(mock_domain);
         ITestOnlyAccounts test_domain = new TestOnlyAccounts(new List<Account>()).newInstance(new List<Account>(), Account.SObjectType);
-        System.assert(test_domain != null);
+        System.Assert.isNotNull(test_domain);
     }
 
     private static void configureDomains()
@@ -214,6 +218,8 @@ private class ApplicationFactoryTest
         };
 
         ApplicationSObjectDomainDIModule.bindingRecords.addAll(bindingList);
+
+        Application.Domain.setMock( new ApplicationFactoryTest.TestOnlyAccounts( new List<Account>() ) );
     }
 
     /********************************************************
@@ -225,16 +231,16 @@ private class ApplicationFactoryTest
         configureUnitOfWork();
 
         IApplicationSObjectUnitOfWork uow = Application.UnitOfWork.newInstance();
-        System.assert(uow != null);
+        System.Assert.isNotNull(uow);
 
         uow = Application.UnitOfWork.newInstance(new List<SObjectType> {Account.SObjectType, Contact.SObjectType});
-        System.assert(uow != null);
+        System.Assert.isNotNull(uow);
 
         uow = Application.UnitOfWork.newInstance(new MockDml());
-        System.assert(uow != null);
+        System.Assert.isNotNull(uow);
 
         uow = Application.UnitOfWork.newInstance(new List<SObjectType> {Account.SObjectType, Contact.SObjectType}, new MockDml());
-        System.assert(uow != null);
+        System.Assert.isNotNull(uow);
     }
 
     private static void configureUnitOfWork()

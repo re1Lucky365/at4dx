@@ -23,59 +23,60 @@
  *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
-
 public class PlatformEventDistributorDIModule
     extends di_Module
 {
-    public override void configure()
-    {
-        String warningMessage = '';
-
-        for ( PlatformEvents_Subscription__mdt registeredSubscriber : getRegisteredSubscribers())
-        {
-            warningMessage = '';
-            
-            // Validate the subscription record first.
-            if (String.isBlank(registeredSubscriber.EventBus__c))
-            {
-                warningMessage += SObjectType.PlatformEvents_Subscription__mdt.getLabel() + ' record named, ' 
-                                    + registeredSubscriber.DeveloperName + ', does not have required field, ' 
-                                    + PlatformEvents_Subscription__mdt.EventBus__c.getDescribe().getLabel();
-
-            }
-
-            if (String.isBlank(registeredSubscriber.Consumer__c))
-            {
-                warningMessage += (String.isNotBlank(warningMessage) ? '\n' : '')
-                                    + SObjectType.PlatformEvents_Subscription__mdt.getLabel() + ' record named, ' 
-                                    + registeredSubscriber.DeveloperName + ', does not have required field, ' 
-                                    + PlatformEvents_Subscription__mdt.Consumer__c.getDescribe().getLabel();
-            }
-
-            if (String.isNotBlank(warningMessage))
-            {
-                System.debug( LoggingLevel.WARN, warningMessage );
-                continue;
-            }
-
-            apex();
-            bind(registeredSubscriber.EventBus__c);
-            bind(IEventsConsumer.class);
-            data(registeredSubscriber);
-            to(registeredSubscriber.Consumer__c);       
-        } 
-    }
-
+    // Stores the list of registered subscribers
     @TestVisible
     private static List<PlatformEvents_Subscription__mdt> registeredSubscribers = new List<PlatformEvents_Subscription__mdt>();
 
-    private List<PlatformEvents_Subscription__mdt> getRegisteredSubscribers()
+    // Static initializer to populate the list of registerd subscribers when class is created
+    // https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_static.htm
+    static
     {
-        registeredSubscribers.addAll([select DeveloperName, Consumer__c, Event__c , EventCategory__c
-                                         , MatcherRule__c, EventBus__c, Execute_Synchronous__c
-                                      from PlatformEvents_Subscription__mdt 
-                                     where IsActive__c = true]);
+        registeredSubscribers.addAll(
+            [
+                SELECT 
+                    DeveloperName, 
+                    Consumer__c, 
+                    Event__c , 
+                    EventCategory__c, 
+                    MatcherRule__c, 
+                    EventBus__c, 
+                    Execute_Synchronous__c
+                FROM PlatformEvents_Subscription__mdt 
+                WHERE IsActive__c = TRUE
+            ]
+        );
+    }
 
-        return registeredSubscribers;
+    public override void configure()
+    {
+        for (PlatformEvents_Subscription__mdt registeredSubscriber : registeredSubscribers)
+        {
+            fflib_SObjectDescribe eventBusDescribe = fflib_SObjectDescribe.getDescribe(registeredSubscriber.EventBus__c);
+
+            // Validate record has EventBus field populated
+            if (String.isBlank(registeredSubscriber.EventBus__c))
+            {
+                throw new ModuleException(SObjectType.PlatformEvents_Subscription__mdt.getLabel() + ' record named, ' 
+                                            + registeredSubscriber.DeveloperName + ', does not have required field, ' 
+                                            + PlatformEvents_Subscription__mdt.EventBus__c.getDescribe().getLabel());
+            }
+
+            // Validate record has Consumer field populated
+            if (String.isBlank(registeredSubscriber.Consumer__c))
+            {
+                throw new ModuleException(SObjectType.PlatformEvents_Subscription__mdt.getLabel() + ' record named, ' 
+                                            + registeredSubscriber.DeveloperName + ', does not have required field, ' 
+                                            + PlatformEvents_Subscription__mdt.Consumer__c.getDescribe().getLabel());
+            }
+
+            apex();
+            bind(eventBusDescribe.getSObjectType());
+            bind(IEventsConsumer.class);
+            data(registeredSubscriber);
+            to(registeredSubscriber.Consumer__c);
+        } 
     }
 }
